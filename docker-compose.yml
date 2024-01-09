@@ -12,8 +12,10 @@ services:
       - WORDPRESS_DB_USER=wp-user
       - WORDPRESS_DB_PASSWORD=password
     depends_on:
-      - wp-dev-db-service
-      - wp-dev-phpmyadmin-service
+      wp-dev-db-service:
+        condition: service_healthy
+      wp-dev-phpmyadmin-service:
+        condition: service_started
     restart: always
     ports:
       - 8080:80
@@ -34,7 +36,8 @@ services:
 
   wp-dev-phpmyadmin-service:
     depends_on:
-      - wp-dev-db-service
+      wp-dev-db-service:
+        condition: service_healthy
     image: phpmyadmin/phpmyadmin:latest
     container_name: wp-dev-phpmyadmin
     restart: always
@@ -56,6 +59,7 @@ services:
         condition: service_healthy
       wp-dev-app-service: 
         condition: service_started
+    restart: always
  
 volumes:
   wp-dev-db_data:

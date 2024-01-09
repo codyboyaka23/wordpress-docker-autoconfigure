@@ -1,0 +1,61 @@
+version: "3.6"
+services:
+  wp-dev-app-service:
+    image: wordpress:latest
+    container_name: wp-dev-app
+    volumes:
+      - ./wordpress:/var/www/html
+    environment:
+      - WORDPRESS_DB_NAME=wordpress
+      - WORDPRESS_TABLE_PREFIX=wp_
+      - WORDPRESS_DB_HOST=wp-dev-db-service
+      - WORDPRESS_DB_USER=riccardo
+      - WORDPRESS_DB_PASSWORD=canard
+    depends_on:
+      - wp-dev-db-service
+      - wp-dev-phpmyadmin-service
+    restart: always
+    ports:
+      - 8080:80
+
+  wp-dev-db-service:
+    image: mariadb:latest
+    container_name: wp-dev-db
+    volumes:
+      - wp-dev-db_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_USER=riccardo
+      - MYSQL_PASSWORD=canard
+      - MYSQL_DATABASE=wordpress
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "healthcheck.sh --su-mysql --connect --innodb_initialized || exit 1"]
+
+  wp-dev-phpmyadmin-service:
+    depends_on:
+      - wp-dev-db-service
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: wp-dev-phpmyadmin
+    restart: always
+    ports:
+      - 8180:80
+    environment:
+      PMA_HOST: wp-dev-db-service
+      MYSQL_ROOT_PASSWORD: password
+
+  wp-dev-wpcli-service:
+    container_name: wp-dev-wpcli
+    build:
+      context: .
+      dockerfile: ./wp-cli/Dockerfile
+    volumes:
+      - ./wordpress:/var/www/html
+    depends_on:
+      wp-dev-db-service:
+        condition: service_healthy
+      wp-dev-app-service: 
+        condition: service_started
+ 
+volumes:
+  wp-dev-db_data:
